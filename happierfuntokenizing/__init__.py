@@ -5,3 +5,5 @@ __license__ = "Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unporte
 __version__ = "1.5"
 __maintainer__ = "H. Andrew Schwartz, Maarten Sap, Salvatore Giorgi"
 __email__ = "See the author's website"
+
+from .happierfuntokenizing import Tokenizer as Tokenizer

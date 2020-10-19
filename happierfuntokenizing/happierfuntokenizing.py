@@ -38,8 +38,9 @@ English-language tweet.
 
 ######################################################################
 
+from typing import Iterable, Sequence, Collection
 import re
-import htmlentitydefs
+from html.entities import name2codepoint
 
 ######################################################################
 # The following strings are components in the regular expression
@@ -152,27 +153,20 @@ hex_re = re.compile(r'\\x[0-9a-z]{1,4}')
 ######################################################################
 
 class Tokenizer:
-    def __init__(self, preserve_case=False, use_unicode=True):
+    def __init__(self, preserve_case: bool=False, use_unicode: bool=True):
         self.preserve_case = preserve_case
         self.use_unicode = use_unicode
 
-    def tokenize(self, s):
+    def tokenize(self, s: str) -> Iterable[str]:
         """
         Argument: s -- any string or unicode object
         Value: a tokenize list of strings; conatenating this list returns the original string if preserve_case=False
         """        
-        # Try to ensure unicode:
-        if self.use_unicode:
-            try:
-                s = unicode(s)
-            except UnicodeDecodeError:
-                s = str(s).encode('string_escape')
-                s = unicode(s)
         # Fix HTML character entitites:
         s = self.__html2unicode(s)
         s = self.__removeHex(s)
         # Tokenize:
-        words = word_re.findall(s)
+        words: Iterable[str] = word_re.findall(s)
         #print words #debug
         # Possible alter the case, but avoid changing emoticons like :D into :d:
         if not self.preserve_case:            
@@ -180,7 +174,7 @@ class Tokenizer:
         
         return words
 
-    def tokenize_random_tweet(self):
+    def tokenize_random_tweet(self) -> Iterable[str]: # type: ignore[no-return]
         """
         If the twitter library is installed and a twitter connection
         can be established, then tokenize a random tweet.
@@ -188,7 +182,7 @@ class Tokenizer:
         try:
             import twitter
         except ImportError:
-            print "Apologies. The random tweet functionality requires the Python twitter library: http://code.google.com/p/python-twitter/"
+            print("Apologies. The random tweet functionality requires the Python twitter library: http://code.google.com/p/python-twitter/")
         from random import shuffle
         api = twitter.Api()
         tweets = api.GetPublicTimeline()
@@ -199,28 +193,27 @@ class Tokenizer:
         else:
             raise Exception("Apologies. I couldn't get Twitter to give me a public English-language tweet. Perhaps try again")
 
-    def __html2unicode(self, s):
+    def __html2unicode(self, s: str) -> str:
         """
         Internal metod that seeks to replace all the HTML entities in
         s with their corresponding unicode characters.
         """
         # First the digits:
-        ents = set(html_entity_digit_re.findall(s))
+        ents: Collection[str] = set(html_entity_digit_re.findall(s))
         if len(ents) > 0:
             for ent in ents:
                 entnum = ent[2:-1]
                 try:
-                    entnum = int(entnum)
-                    s = s.replace(ent, unichr(entnum))	
+                    s = s.replace(ent, chr(int(entnum)))
                 except:
                     pass
         # Now the alpha versions:
         ents = set(html_entity_alpha_re.findall(s))
-        ents = filter((lambda x : x != amp), ents)
+        ents = list(filter((lambda x : x != amp), ents))
         for ent in ents:
             entname = ent[1:-1]
             try:            
-                s = s.replace(ent, unichr(htmlentitydefs.name2codepoint[entname]))
+                s = s.replace(ent, chr(name2codepoint[entname]))
             except:
                 pass                    
             s = s.replace(amp, " and ")
@@ -238,7 +231,7 @@ if __name__ == '__main__':
 
     import sys
 
-    samples = (
+    samples: Sequence[str] = (
         u"RT @ #happyfuncoding: this is a typical Twitter tweet :-)",
         u"It's perhaps noteworthy that phone numbers like +1 (800) 123-4567, (800) 123-4567, and 123-4567 are treated as words despite their whitespace.",
         u'Something </sarcasm> about <fails to break this up> <3 </3 <\\3 mañana vergüenza güenza création tonterías tonteréas <em class="grumpy">pain</em> <meta name="viewport" content="width=device-width"> <br />',
@@ -250,7 +243,7 @@ if __name__ == '__main__':
         samples = sys.argv[1:]
 
     for s in samples:
-        print "======================================================================"
-        print s
+        print("======================================================================")
+        print(s)
         tokenized = tok.tokenize(s)
-        print "\n".join(tokenized).encode('utf8', 'ignore') if tok.use_unicode else "\n".join(tokenized)
+        print("\n".join(tokenized).encode('utf8', 'ignore') if tok.use_unicode else "\n".join(tokenized))
